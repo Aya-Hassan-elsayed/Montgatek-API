@@ -189,8 +189,11 @@ async function seedDatabase() {
 
     const imageName = images[i % images.length];
 
-    const imageUrl =
-      `http://localhost:3000/public/uploads/${encodeURIComponent(imageName)}`;
+    const BASE_URL =
+  process.env.BASE_URL || "http://localhost:3000";
+
+const imageUrl =
+  `${BASE_URL}/public/uploads/${encodeURIComponent(imageName)}`;
 
 
     products.push({

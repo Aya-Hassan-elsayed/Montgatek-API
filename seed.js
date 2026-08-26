@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
@@ -105,147 +106,543 @@ async function seedDatabase() {
 
 
   // --------------------------------
-  // 3. Read Images Automatically
+  // 3. Category References
   // --------------------------------
 
-  const uploadsPath = path.join(__dirname, "public", "uploads");
+  const electronicsCategory = categories.find(
+    c => c.name === "Electronics"
+  );
 
-  let images = [];
+  const phonesCategory = categories.find(
+    c => c.name === "Mobile Phones"
+  );
 
-  if (fs.existsSync(uploadsPath)) {
+  const computersCategory = categories.find(
+    c => c.name === "Computers"
+  );
 
-    images = fs
-      .readdirSync(uploadsPath)
-      .filter((file) => {
-        const extension = path.extname(file).toLowerCase();
+  const fashionCategory = categories.find(
+    c => c.name === "Fashion"
+  );
+
+  const watchesCategory = categories.find(
+    c => c.name === "Watches"
+  );
+
+  const accessoriesCategory = categories.find(
+    c => c.name === "Accessories"
+  );
+
+  const homeCategory = categories.find(
+    c => c.name === "Home"
+  );
+
+  const beautyCategory = categories.find(
+    c => c.name === "Beauty"
+  );
+
+
+  // --------------------------------
+  // 4. Uploads Path
+  // --------------------------------
+
+  const uploadsPath = path.join(
+    __dirname,
+    "public",
+    "uploads"
+  );
+
+
+  // --------------------------------
+  // 5. Read Images From Category Folder
+  // --------------------------------
+
+  function getImagesFromFolder(folderName) {
+
+    const folderPath = path.join(
+      uploadsPath,
+      folderName
+    );
+
+    if (!fs.existsSync(folderPath)) {
+
+      console.log(
+        `Folder not found: ${folderPath}`
+      );
+
+      return [];
+    }
+
+    return fs
+      .readdirSync(folderPath)
+      .filter(file => {
+
+        const extension =
+          path.extname(file).toLowerCase();
 
         return [
           ".jpg",
           ".jpeg",
-          ".png"
+          ".png",
+          ".webp"
         ].includes(extension);
+
       });
-
   }
 
-  console.log(`${images.length} images found.`);
+
+  // --------------------------------
+  // 6. Read Current Images
+  // --------------------------------
+
+  const smartImages =
+    getImagesFromFolder("smart");
+
+  const phoneImages =
+    getImagesFromFolder("Mobile Phones");
+
+  const laptopImages =
+    getImagesFromFolder("laptops");
+
+  const headphoneImages =
+    getImagesFromFolder("headphones");
 
 
-  // If no images exist
-  if (images.length === 0) {
+  console.log("");
+  console.log("==============================");
+  console.log("IMAGES FOUND");
+  console.log("==============================");
 
-    console.log(
-      "WARNING: No images found in public/uploads."
+  console.log(
+    `Electronics (smart): ${smartImages.length}`
+  );
+
+  console.log(
+    `Mobile Phones: ${phoneImages.length}`
+  );
+
+  console.log(
+    `Computers (laptops): ${laptopImages.length}`
+  );
+
+  console.log(
+    `Accessories (headphones): ${headphoneImages.length}`
+  );
+
+  console.log("==============================");
+
+
+  // --------------------------------
+  // 7. Base URL
+  // --------------------------------
+
+  const BASE_URL =
+    process.env.BASE_URL ||
+    "http://localhost:3000";
+
+
+  // --------------------------------
+  // 8. Default Image
+  // --------------------------------
+
+  const defaultImageUrl =
+    `${BASE_URL}/public/uploads/default.jpg`;
+
+
+  // --------------------------------
+  // 9. Create Image URL
+  // --------------------------------
+
+  function createImageUrl(
+    folderName,
+    imageName
+  ) {
+
+    if (!imageName) {
+      return defaultImageUrl;
+    }
+
+    return `${BASE_URL}/public/uploads/${encodeURIComponent(
+      folderName
+    )}/${encodeURIComponent(imageName)}`;
+  }
+
+
+  // --------------------------------
+  // 10. Create Products Helper
+  // --------------------------------
+
+  function createProductsForCategory(
+    category,
+    productsData,
+    folderName,
+    images
+  ) {
+
+    return productsData.map(
+      (product, index) => {
+
+        let imageUrl;
+
+        // Category has real images
+        if (images.length > 0) {
+
+          const imageName =
+            images[index % images.length];
+
+          imageUrl = createImageUrl(
+            folderName,
+            imageName
+          );
+
+        }
+
+        // Category has no images yet
+        else {
+
+          imageUrl = defaultImageUrl;
+
+        }
+
+
+        return {
+
+          name: product.name,
+
+          description:
+            "High quality product with modern design.",
+
+          richDescription:
+            `This is a high quality ${product.name} designed for everyday use.`,
+
+          image: imageUrl,
+
+          images: [
+            imageUrl
+          ],
+
+          brand: product.brand,
+
+          price: product.price,
+
+          discount:
+            product.discount || 0,
+
+          category:
+            category._id,
+
+          countInStock:
+            10 + index,
+
+          rating:
+            3 + ((index % 3) * 0.5),
+
+          numReviews:
+            index * 2,
+
+          isFeatured:
+            index < 5,
+
+          color:
+            [
+              "#000000",
+              "#ffffff",
+              "#3498db",
+              "#e74c3c",
+              "#2ecc71"
+            ][index % 5]
+        };
+
+      }
     );
-
-    // We can still create products
-    images = ["default.jpg"];
   }
 
 
   // --------------------------------
-  // 4. Create Products
+  // 11. Create Products
   // --------------------------------
 
+  console.log("");
   console.log("Creating products...");
-
-  const productNames = [
-    "Smart Phone",
-    "Premium Smartphone",
-    "Wireless Headphones",
-    "Bluetooth Speaker",
-    "Gaming Laptop",
-    "Laptop Pro",
-    "Smart Watch",
-    "Classic Watch",
-    "Fashion Bag",
-    "Running Shoes",
-    "Wireless Mouse",
-    "Mechanical Keyboard",
-    "Power Bank",
-    "USB Cable",
-    "Phone Charger",
-    "Tablet",
-    "Digital Camera",
-    "Gaming Headset",
-    "Sunglasses",
-    "Home Speaker"
-  ];
-
-  const descriptions = [
-    "High quality product with modern design.",
-    "Premium product with excellent performance.",
-    "Modern design and reliable performance.",
-    "Perfect choice for everyday use."
-  ];
-
 
   const products = [];
 
 
-  for (let i = 0; i < productNames.length; i++) {
+  // ===============================
+  // ELECTRONICS
+  // ===============================
 
-    const category = categories[i % categories.length];
+  products.push(
+    ...createProductsForCategory(
 
-    const imageName = images[i % images.length];
+      electronicsCategory,
 
-    const BASE_URL =
-  process.env.BASE_URL || "http://localhost:3000";
-
-const imageUrl =
-  `${BASE_URL}/public/uploads/${encodeURIComponent(imageName)}`;
-
-
-    products.push({
-
-      name: productNames[i],
-
-      description:
-        descriptions[i % descriptions.length],
-
-      richDescription:
-        `This is a high quality ${productNames[i]} designed for everyday use.`,
-
-      image: imageUrl,
-
-      images: [
-        imageUrl
+      [
+        {
+          name: "Smart Speaker",
+          brand: "Sony",
+          price: 2500
+        },
+        {
+          name: "Bluetooth Speaker",
+          brand: "JBL",
+          price: 3200
+        },
+        {
+          name: "Digital Camera",
+          brand: "Sony",
+          price: 7500
+        },
+        {
+          name: "Smart Device",
+          brand: "Xiaomi",
+          price: 1800
+        }
       ],
 
-      brand:
-        ["Apple", "Samsung", "Sony", "Nike", "Lenovo", "Xiaomi"][
-          i % 6
-        ],
+      "smart",
 
-      price:
-        500 + (i * 350),
+      smartImages
+    )
+  );
 
-      discount:
-        i % 4 === 0 ? 10 : 0,
 
-      category:
-        category._id,
+  // ===============================
+  // MOBILE PHONES
+  // ===============================
 
-      countInStock:
-        10 + (i % 20),
+  products.push(
+    ...createProductsForCategory(
 
-      rating:
-        3 + ((i % 3) * 0.5),
+      phonesCategory,
 
-      numReviews:
-        i * 2,
+      [
+        {
+          name: "iPhone Smartphone",
+          brand: "Apple",
+          price: 25000
+        },
+        {
+          name: "Samsung Galaxy",
+          brand: "Samsung",
+          price: 18000
+        },
+        {
+          name: "Xiaomi Smartphone",
+          brand: "Xiaomi",
+          price: 9000
+        },
+        {
+          name: "Premium Smartphone",
+          brand: "Samsung",
+          price: 15000
+        }
+      ],
 
-      isFeatured:
-        i < 8,
+      "Mobile Phones",
 
-      color:
-        ["#000000", "#ffffff", "#3498db", "#e74c3c", "#2ecc71"][
-          i % 5
-        ]
+      phoneImages
+    )
+  );
 
-    });
-  }
 
+  // ===============================
+  // COMPUTERS
+  // ===============================
+
+  products.push(
+    ...createProductsForCategory(
+
+      computersCategory,
+
+      [
+        {
+          name: "Gaming Laptop",
+          brand: "Lenovo",
+          price: 35000
+        },
+        {
+          name: "Laptop Pro",
+          brand: "Lenovo",
+          price: 42000
+        },
+        {
+          name: "Business Laptop",
+          brand: "Dell",
+          price: 30000
+        },
+        {
+          name: "Professional Laptop",
+          brand: "HP",
+          price: 38000
+        }
+      ],
+
+      "laptops",
+
+      laptopImages
+    )
+  );
+
+
+  // ===============================
+  // ACCESSORIES
+  // ===============================
+
+  products.push(
+    ...createProductsForCategory(
+
+      accessoriesCategory,
+
+      [
+        {
+          name: "Wireless Headphones",
+          brand: "Sony",
+          price: 4500
+        },
+        {
+          name: "Bluetooth Headphones",
+          brand: "JBL",
+          price: 3500
+        },
+        {
+          name: "Gaming Headset",
+          brand: "Sony",
+          price: 5000
+        },
+        {
+          name: "Premium Headphones",
+          brand: "JBL",
+          price: 6000
+        }
+      ],
+
+      "headphones",
+
+      headphoneImages
+    )
+  );
+
+
+  // ===============================
+  // FASHION
+  // ===============================
+
+  products.push(
+    ...createProductsForCategory(
+
+      fashionCategory,
+
+      [
+        {
+          name: "Fashion Bag",
+          brand: "Nike",
+          price: 2500
+        },
+        {
+          name: "Running Shoes",
+          brand: "Nike",
+          price: 3000
+        }
+      ],
+
+      "",
+
+      []
+    )
+  );
+
+
+  // ===============================
+  // WATCHES
+  // ===============================
+
+  products.push(
+    ...createProductsForCategory(
+
+      watchesCategory,
+
+      [
+        {
+          name: "Smart Watch",
+          brand: "Xiaomi",
+          price: 5000
+        },
+        {
+          name: "Classic Watch",
+          brand: "Sony",
+          price: 3500
+        }
+      ],
+
+      "",
+
+      []
+    )
+  );
+
+
+  // ===============================
+  // HOME
+  // ===============================
+
+  products.push(
+    ...createProductsForCategory(
+
+      homeCategory,
+
+      [
+        {
+          name: "Home Speaker",
+          brand: "JBL",
+          price: 2800
+        },
+        {
+          name: "Home Device",
+          brand: "Xiaomi",
+          price: 2200
+        }
+      ],
+
+      "",
+
+      []
+    )
+  );
+
+
+  // ===============================
+  // BEAUTY
+  // ===============================
+
+  products.push(
+    ...createProductsForCategory(
+
+      beautyCategory,
+
+      [
+        {
+          name: "Beauty Product",
+          brand: "Sony",
+          price: 1500
+        },
+        {
+          name: "Beauty Kit",
+          brand: "Xiaomi",
+          price: 2000
+        }
+      ],
+
+      "",
+
+      []
+    )
+  );
+
+
+  // --------------------------------
+  // 12. Insert Products
+  // --------------------------------
 
   const createdProducts =
     await Product.insertMany(products);
@@ -256,11 +653,10 @@ const imageUrl =
 
 
   // --------------------------------
-  // 5. Create Users
+  // 13. Create Users
   // --------------------------------
 
   console.log("Creating users...");
-
 
   const users = [
 
@@ -320,15 +716,27 @@ const imageUrl =
 
 
   // --------------------------------
-  // 6. Summary
+  // 14. Summary
   // --------------------------------
 
   console.log("");
+
   console.log("==============================");
   console.log("DATABASE SEEDED SUCCESSFULLY");
   console.log("==============================");
-  console.log(`Categories: ${categories.length}`);
-  console.log(`Products:   ${createdProducts.length}`);
-  console.log(`Users:      ${createdUsers.length}`);
+
+  console.log(
+    `Categories: ${categories.length}`
+  );
+
+  console.log(
+    `Products:   ${createdProducts.length}`
+  );
+
+  console.log(
+    `Users:      ${createdUsers.length}`
+  );
+
   console.log("==============================");
 }
+
